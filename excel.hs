@@ -1,6 +1,7 @@
 import System.Win32.Com 
 import System.Win32.Com.Automation
 import qualified Data.Map as M (fromList, lookup)
+import Data.List.Split (chunksOf)
 
 
 data Range_ a = Range__ 
@@ -351,7 +352,7 @@ testCell = coRun $ do
     pExl <- createObjExl
     workBooks <- pExl # getWorkbooks
     pExl # propertySet "DisplayAlerts" [inBool False]
-    workBook <- workBooks # openWorkBooks fichierTest4
+    workBook <- workBooks # openWorkBooks fichierTest3
     workSheets <- workBook # getWSheets
 
     printData workSheets "BIV"
@@ -367,6 +368,31 @@ testCell = coRun $ do
 *Main> r
 
         -}
+
+testSplit = coRun $ do
+    pExl <- createObjExl
+    workBooks <- pExl # getWorkbooks
+    pExl # propertySet "DisplayAlerts" [inBool False]
+    workBook <- workBooks # openWorkBooks fichierTest3
+    putStrLn  $"File loaded: " ++ fichierTest3
+
+    workSheets <- workBook # getWSheets
+
+    sheetSel <- workSheets # propertyGet_1 "Item" "BIV"
+
+    rng1 <- sheetSel # propertyGet_1 "Range" "C7"
+    endrow <- rng1 # propertyGet_1 "End" xlDown
+    row <- endrow # propertyGet_0 "Row" :: IO Int
+    let lastrow =  "C7:BC"++ show row
+    putStrLn $ "endrow = " ++  lastrow
+    rng <- sheetSel # propertyGet_1 "Range" lastrow
+    (_,r) <- rng # enumVariants :: IO (Int,[String])
+    let t = chunksOf 53 r
+    mapM_ putStr $ t!!78
+    
+    workBooks # method_1_0 "Close" xlDoNotSaveChanges
+    pExl # method_0_0 "Quit"
+    mapM release [rng,rng1, sheetSel, workSheets, workBook, workBooks, pExl]
 
 testEndRow = coRun $ do
     pExl <- createObjExl

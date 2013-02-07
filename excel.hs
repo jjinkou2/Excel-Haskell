@@ -447,7 +447,25 @@ testIndice ind = coRun $ do
     let kpiData n  = map (toDouble.(r!!).(+53*n)) [1..52]
         kpiName = map (\n -> r!!(53*n)) $ [0..72]
         site = kpiData 0
+
+
+
     return (kpiName!! ind , kpiData ind)
+
+
+{--
+    - structure
+        
+services ::[ServStruct]
+Servstruct = data   { servName :: String
+                    , kpi :: [KpiStruct]
+                    }
+KpiStruct = data    { kpiName :: String
+                    , kpidonne :: []
+}
+
+
+        --}
 
 testSplit = coRun $ do
     pExl <- createObjExl

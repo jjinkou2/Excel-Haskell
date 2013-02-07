@@ -406,10 +406,10 @@ trunc double = (fromInteger $ round $ double * (10^2)) / (10.0 ^^2)
 
     -- reads double or put 0 
 toDouble xs = case (reads.chgComma.endBy "," $ xs :: [(Double,String)] ) of
-    [(d,s)] -> trunc d
+    [(d,s)] -> d
     _ -> 0
     where 
-        chgComma [x,y] = x ++ "." ++ y
+        chgComma [x,y] = x ++ "." ++ (take 2 y)
         chgComma xs = concat xs
 
 toInt xs = case (reads xs :: [(Int,String)] ) of
@@ -471,23 +471,21 @@ testSplit = coRun $ do
     let part xss        = map (\(x:xs) -> (x,xs)) xss
         kmKPI           = M.fromList.part.chunksOf 53 $ r
         defKpi          = replicate 52 ""
-        defInt          = replicate 52 0
-        defDouble       = replicate 52 0.0
-        nbSites         = M.findWithDefault defKpi "Sites" kmKPI
-        nbChannels      = M.findWithDefault defKpi "Nb channels" kmKPI
-        nbMinutes       = M.findWithDefault defKpi "Minutes (Millions)" kmKPI
-        calls           = M.findWithDefault defKpi "Calls (Millions)" kmKPI
-        pgad            = M.findWithDefault defKpi "Post Gateway Answer Delay (sec)" kmKPI
-        asr             = M.findWithDefault defKpi "Answer Seizure Ratio (%)" kmKPI
-        ner             = M.findWithDefault defKpi "Network Efficiency Ratio (%)" kmKPI
-        attps           = M.findWithDefault defKpi "ATTPS = Average Trouble Ticket Per Site" kmKPI
-        afis            = M.findWithDefault defKpi "Average FT Incident per Site\" AFIS" kmKPI
-        mos             = M.findWithDefault defKpi "Mean Opinion Score (PESQ)" kmKPI
-        pdd             = M.findWithDefault defKpi "Post Dialing Delay (sec)" kmKPI
-        csr             = M.findWithDefault defKpi "Call Sucessful Ratio" kmKPI
-        rtd             = M.findWithDefault defKpi "RTD average" kmKPI
-        avail           = M.findWithDefault defKpi "Availability ratio HO (outage&changes)" kmKPI
-        unAvail         = M.findWithDefault defKpi "Unavailability minutes HO (outage&changes)" kmKPI
+        nbSites         = map toInt $ M.findWithDefault defKpi "Sites" kmKPI
+        nbChannels      = map toInt $ M.findWithDefault defKpi "Nb channels" kmKPI
+        nbMinutes       = map toDouble $ M.findWithDefault defKpi "Minutes (Millions)" kmKPI
+        calls           = map toDouble $ M.findWithDefault defKpi "Calls (Millions)" kmKPI
+        pgad            = map toDouble $ M.findWithDefault defKpi "Post Gateway Answer Delay (sec)" kmKPI
+        asr             = map toDouble $ M.findWithDefault defKpi "Answer Seizure Ratio (%)" kmKPI
+        ner             = map toDouble $ M.findWithDefault defKpi "Network Efficiency Ratio (%)" kmKPI
+        attps           = map toDouble $ M.findWithDefault defKpi "ATTPS = Average Trouble Ticket Per Site" kmKPI
+        afis            = map toDouble $ M.findWithDefault defKpi "Average FT Incident per Site\" AFIS" kmKPI
+        mos             = map toDouble $ M.findWithDefault defKpi "Mean Opinion Score (PESQ)" kmKPI
+        pdd             = map toDouble $ M.findWithDefault defKpi "Post Dialing Delay (sec)" kmKPI
+        csr             = map toDouble $ M.findWithDefault defKpi "Call Sucessful Ratio" kmKPI
+        rtd             = map toDouble $ M.findWithDefault defKpi "RTD average" kmKPI
+        avail           = map toDouble $ M.findWithDefault defKpi "Availability ratio HO (outage&changes)" kmKPI
+        unAvail         = map toDouble $ M.findWithDefault defKpi "Unavailability minutes HO (outage&changes)" kmKPI
         commentIndisp1  = M.findWithDefault defKpi "CommentIndispo1" kmKPI
         commentIndisp2  = M.findWithDefault defKpi "CommentIndispo2" kmKPI
         commentIndisp3  = M.findWithDefault defKpi "CommentIndispo3" kmKPI

@@ -1,6 +1,6 @@
 import System.Win32.Com 
 import System.Win32.Com.Automation
-import qualified Data.Map as M (fromList, lookup)
+import qualified Data.Map as M (fromList, lookup, findWithDefault)
 import Data.List.Split (chunksOf)
 
 
@@ -387,12 +387,82 @@ testSplit = coRun $ do
     putStrLn $ "endrow = " ++  lastrow
     rng <- sheetSel # propertyGet_1 "Range" lastrow
     (_,r) <- rng # enumVariants :: IO (Int,[String])
-    let t = chunksOf 53 r
-    mapM_ putStr $ t!!78
+    
+    let part xss = map (\(x:xs) -> (x,xs)) xss
+        kmKPI = M.fromList.part.chunksOf 53 $ r
+        defKpi = replicate 52 ""
+        nbSites  = M.findWithDefault defKpi "Sites" kmKPI
+        nbChannels  = M.findWithDefault defKpi "Nb channels" kmKPI
+        nbMinutes  = M.findWithDefault defKpi "Minutes (Millions)" kmKPI
+        calls    = M.findWithDefault defKpi "Calls (Millions)" kmKPI
+        pgad     = M.findWithDefault defKpi "Post Gateway Answer Delay (sec)" kmKPI
+        asr  = M.findWithDefault defKpi "Answer Seizure Ratio (%)" kmKPI
+        ner  = M.findWithDefault defKpi "Network Efficiency Ratio (%)" kmKPI
+        attps    = M.findWithDefault defKpi "ATTPS = Average Trouble Ticket Per Site" kmKPI
+        afis     = M.findWithDefault defKpi "Average FT Incident per Site\" AFIS" kmKPI
+        mos  = M.findWithDefault defKpi "Mean Opinion Score (PESQ)" kmKPI
+        pdd  = M.findWithDefault defKpi "Post Dialing Delay (sec)" kmKPI
+        csr  = M.findWithDefault defKpi "Call Sucessful Ratio" kmKPI
+        rtd  = M.findWithDefault defKpi "RTD average" kmKPI
+        avail    = M.findWithDefault defKpi "Availability ratio HO (outage&changes)" kmKPI
+        unAvail  = M.findWithDefault defKpi "Unavailability minutes HO (outage&changes)" kmKPI
+        commentIndisp1  = M.findWithDefault defKpi "CommentIndispo1" kmKPI
+        commentIndisp2  = M.findWithDefault defKpi "CommentIndispo2" kmKPI
+        commentIndisp3  = M.findWithDefault defKpi "CommentIndispo3" kmKPI
+        commentIndisp4  = M.findWithDefault defKpi "CommentIndispo4" kmKPI
+        commentAFIS1  = M.findWithDefault defKpi "CommentAFIS1" kmKPI
+        commentAFIS2  = M.findWithDefault defKpi "CommentAFIS2" kmKPI
+        commentMOS1  = M.findWithDefault defKpi "CommentMOS1" kmKPI
+        commentMOS2  = M.findWithDefault defKpi "CommentMOS2" kmKPI
+    
+ 
+    -- print them
+    putStrLn "----nbSites---"
+    print nbSites
+    putStrLn "----nbChannels---"
+    print nbChannels
+    putStrLn "----nbMinutes---"
+    print nbMinutes
+    putStrLn "----ASR ---"
+    print asr
+    putStrLn "----Ner ---"
+    print ner
+    putStrLn "----mos ---"
+    print mos
+    putStrLn "----pdd ---"
+    print pdd
+    putStrLn "----csr ---"
+    print csr
+    putStrLn "---- rtd ---"
+    print rtd
+    putStrLn "---- commentIndisp1 ---"
+    print commentIndisp1
+    putStrLn "---- commentIndisp2 ---"
+    print commentIndisp2
+    putStrLn "---- commentIndisp3 ---"
+    print commentIndisp3
+    putStrLn "---- commentIndisp4 ---"
+    print commentIndisp4
+    putStrLn "---- commentAFIS1 ---"
+    print commentAFIS1
+    putStrLn "---- commentAFIS2 ---"
+    print commentAFIS2
+    putStrLn "---- commentMOS1 ---"
+    print commentMOS1
+    putStrLn "---- CommentMOS2 ---"
+    mapM_ putStr commentMOS2
+    putStrLn "----attps ---"
+    print attps
+    putStrLn "----afis ---"
+    print afis 
+    putStrLn "----avail ---"
+   -- print avail 
+    putStrLn "----unvail ---"
+    print unAvail 
     
     workBooks # method_1_0 "Close" xlDoNotSaveChanges
     pExl # method_0_0 "Quit"
-    mapM release [rng,rng1, sheetSel, workSheets, workBook, workBooks, pExl]
+    mapM release [endrow,rng,rng1, sheetSel, workSheets, workBook, workBooks, pExl]
 
 testEndRow = coRun $ do
     pExl <- createObjExl

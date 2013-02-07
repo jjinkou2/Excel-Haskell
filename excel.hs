@@ -224,7 +224,6 @@ testSelectRng cell sheet = coRun $ do
     
     --}
 
-data KpiType = KInt | KDouble | KStr 
 
 printData workSheets sheetName = do 
 
@@ -446,11 +445,16 @@ testIndice ind = coRun $ do
 
     let kpiData n  = map (toDouble.(r!!).(+53*n)) [1..52]
         kpiName = map (\n -> r!!(53*n)) $ [0..72]
+        kpiIndMap = M.fromList $ zip kpiName [0..]
         site = kpiData 0
 
+        rowSite     = M.lookup "Sites" kpiIndMap
+        lookupData fill rowKpi = maybe (replicate 52 fill) -- default value [fill,...fill]
+                                       kpiData -- handler 
+                                       rowKpi -- Nothing or Just (kpi row) 
 
-
-    return (kpiName!! ind , kpiData ind)
+    return $ lookupData 0 rowSite
+    -- return (kpiName!! ind , kpiData ind)
 
 
 {--

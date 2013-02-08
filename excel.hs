@@ -3,7 +3,7 @@ import System.Win32.Com.Automation
 import qualified Data.Map as M (fromList, lookup, findWithDefault)
 import Data.List.Split (chunksOf, endBy)
 
-
+--
 data Range_ a = Range__ 
 type Range a = IDispatch (Range_ a)
 

@@ -224,7 +224,8 @@ testSelectRng cell sheet = coRun $ do
     
     --}
 
-
+--
+--printData :: Variant a1 => IDispatch d -> a1 -> IO ()
 printData workSheets sheetName = do 
 
     sheetSel <- workSheets # propertyGet_1 "Item" sheetName 
@@ -404,6 +405,7 @@ trunc :: Double -> Double
 trunc double = (fromInteger $ round $ double * (10^2)) / (10.0 ^^2)
 
     -- reads double or put 0 
+toDouble :: String -> Double
 toDouble xs = case (reads.chgComma.endBy "," $ xs :: [(Double,String)] ) of
     [(d,s)] -> d
     _ -> 0
@@ -423,7 +425,7 @@ toInt xs = case (reads xs :: [(Int,String)] ) of
     - tests 
         - --}
 
-testIndice ind = coRun $ do
+testIndice = coRun $ do
     pExl <- createObjExl
     workBooks <- pExl # getWorkbooks
     pExl # propertySet "DisplayAlerts" [inBool False]
@@ -443,19 +445,111 @@ testIndice ind = coRun $ do
     (_,r) <- rng # enumVariants :: IO (Int,[String])
     putStrLn "got all datas"
 
-    let kpiData n  = map (toDouble.(r!!).(+53*n)) [1..52]
+    let kpiData toX n  = map (toX.(r!!).(+53*n)) [1..52]
         kpiName = map (\n -> r!!(53*n)) $ [0..72]
         kpiIndMap = M.fromList $ zip kpiName [0..]
-        site = kpiData 0
 
         rowSite     = M.lookup "Sites" kpiIndMap
-        lookupData fill rowKpi = maybe (replicate 52 fill) -- default value [fill,...fill]
-                                       kpiData -- handler 
+        rowChannels = M.lookup "Nb channels" kpiIndMap
+        rowMinutes  = M.lookup "Minutes (Millions)" kpiIndMap
+        rowCalls    = M.lookup "Calls (Millions)" kpiIndMap
+        rowPgad     = M.lookup "Post Gateway Answer Delay (sec)" kpiIndMap
+        rowAsr      = M.lookup "Answer Seizure Ratio (%)" kpiIndMap
+        rowNer      = M.lookup "Network Efficiency Ratio (%)" kpiIndMap
+        rowAttps    = M.lookup "ATTPS = Average Trouble Ticket Per Site" kpiIndMap
+        rowAfis     = M.lookup "Average FT Incident per Site\" AFIS" kpiIndMap
+        rowMos      = M.lookup "Mean Opinion Score (PESQ)" kpiIndMap
+        rowPdd      = M.lookup "Post Dialing Delay (sec)" kpiIndMap
+        rowCsr      = M.lookup "Call Sucessful Ratio" kpiIndMap
+        rowRtd      = M.lookup "RTD average" kpiIndMap
+        rowAvail    = M.lookup "Availability ratio HO (outage&changes)" kpiIndMap
+        rowUnAvail  = M.lookup "Unavailability minutes HO (outage&changes)" kpiIndMap
+        rowComInd1  = M.lookup "CommentIndispo1" kpiIndMap
+        rowComInd2  = M.lookup "CommentIndispo2" kpiIndMap
+        rowComInd3  = M.lookup "CommentIndispo3" kpiIndMap
+        rowComInd4  = M.lookup "CommentIndispo4" kpiIndMap
+        rowComInd5  = M.lookup "CommentIndispo5" kpiIndMap
+        rowComAfis1 = M.lookup "CommentAFIS1" kpiIndMap
+        rowComAfis2 = M.lookup "CommentAFIS2" kpiIndMap
+        rowComMos1  = M.lookup "CommentMOS1" kpiIndMap
+        rowComMos2  = M.lookup "CommentMOS2" kpiIndMap
+
+        lookupData toX fill rowKpi = maybe (replicate 52 fill) -- default value [fill,...fill]
+                                       (kpiData toX) -- handler 
                                        rowKpi -- Nothing or Just (kpi row) 
 
-    return $ lookupData 0 rowSite
-    -- return (kpiName!! ind , kpiData ind)
+        nbSites = lookupData toInt 0 rowSite 
+        nbChannels = lookupData toInt 0 rowChannels
+        nbMinutes = lookupData toDouble 0 rowMinutes
+        asr = lookupData toDouble 0 rowAsr
+        ner = lookupData toDouble 0 rowNer
+        attps = lookupData toDouble 0 rowAttps
+        afis = lookupData toDouble 0 rowAfis
+        mos = lookupData toDouble 0 rowMos
+        pdd = lookupData toDouble 0 rowPdd
+        csr = lookupData toDouble 0 rowCsr
+        rtd = lookupData toDouble 0 rowRtd
+        avail = lookupData toDouble 0 rowAvail
+        unavail = lookupData toDouble 0 rowUnAvail
+        
+        commentIndisp1 = lookupData id "" rowComInd1
+        commentIndisp2 = lookupData id ""  rowComInd2
+        commentIndisp3 = lookupData id ""  rowComInd3
+        commentIndisp4 = lookupData id ""  rowComInd4
+        commentIndisp5 = lookupData id ""  rowComInd5
+        commentAFIS1 = lookupData id ""  rowComAfis1
+        commentAFIS2 = lookupData id ""  rowComAfis2
+        commentMOS1 = lookupData id ""  rowComMos1
+        commentMOS2 = lookupData id "" rowComMos2
 
+    
+    -- return (kpiName!! ind , kpiData ind)
+    -- print them
+    putStrLn "----nbSites---"
+    print nbSites
+    putStrLn "----nbChannels---"
+    print nbChannels
+    putStrLn "----nbMinutes---"
+    print nbMinutes
+    putStrLn "----ASR ---"
+    print asr
+    putStrLn "----Ner ---"
+    print ner
+    putStrLn "----mos ---"
+    print mos
+    putStrLn "----pdd ---"
+    print pdd
+    putStrLn "----csr ---"
+    print csr
+    putStrLn "---- rtd ---"
+    print rtd
+    putStrLn "---- commentIndisp1 ---"
+    print commentIndisp1
+    putStrLn "---- commentIndisp2 ---"
+    print commentIndisp2
+    putStrLn "---- commentIndisp3 ---"
+    print commentIndisp3
+    putStrLn "---- commentIndisp4 ---"
+    print commentIndisp4
+    putStrLn "---- commentIndisp5 ---"
+    print commentIndisp5
+    putStrLn "---- commentAFIS1 ---"
+    print commentAFIS1
+    putStrLn "---- commentAFIS2 ---"
+    print commentAFIS2
+    putStrLn "---- commentMOS1 ---"
+    print commentMOS1
+    putStrLn "---- CommentMOS2 ---"
+    mapM_ putStr commentMOS2
+    putStrLn "----attps ---"
+    print attps
+    putStrLn "----afis ---"
+    print afis 
+    putStrLn "----avail ---"
+    print avail 
+    putStrLn "----unvail ---"
+    print unavail 
+    --}
 
 {--
     - structure

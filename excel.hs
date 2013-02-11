@@ -131,7 +131,7 @@ newExcel = coRun $ do
 fichierTest = "C:/Users/lyup7323/Developpement/Haskell/Com/qos1.xls"
 fichierTest2 = "E:/Programmation/haskell/Com/qos1.xls"
 fichierTest3 = "E:/Programmation/haskell/Com/qos.xls"
-fichierTest4 = "C:/Users/lyup7323/Documents/GitHub/Excel-Haskell/qos.xls"
+fichierTest4 = "C:/Users/lyup7323/Developpement/Haskell/Com/qos.xls"
 
 --
 openXls = coRun $ do 
@@ -429,7 +429,7 @@ testIndice = coRun $ do
     pExl <- createObjExl
     workBooks <- pExl # getWorkbooks
     pExl # propertySet "DisplayAlerts" [inBool False]
-    workBook <- workBooks # openWorkBooks fichierTest3
+    workBook <- workBooks # openWorkBooks fichierTest4
     putStrLn  $"File loaded: " ++ fichierTest3
 
     workSheets <- workBook # getWSheets
@@ -550,6 +550,9 @@ testIndice = coRun $ do
     putStrLn "----unvail ---"
     print unavail 
     --}
+    workBooks # method_1_0 "Close" xlDoNotSaveChanges
+    pExl # method_0_0 "Quit"
+    mapM release [endrow,rng,rng1, sheetSel, workSheets, workBook, workBooks, pExl]
 
 {--
     - structure

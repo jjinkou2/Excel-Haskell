@@ -435,6 +435,7 @@ testIndice = coRun $ do
     workSheets <- workBook # getWSheets
 
     sheetSel <- workSheets # propertyGet_1 "Item" "BIV"
+    sheetSel # propertySet "Unprotect" []
 
     rng1 <- sheetSel # propertyGet_1 "Range" "C7"
     endrow <- rng1 # propertyGet_1 "End" xlDown
@@ -550,6 +551,11 @@ testIndice = coRun $ do
     putStrLn "----unvail ---"
     print unavail 
     --}
+
+    
+    workBooks # method_1_0 "Close" xlDoNotSaveChanges
+    pExl # method_0_0 "Quit"
+    mapM release [endrow,rng,rng1, sheetSel, workSheets, workBook, workBooks, pExl]
 
 {--
     - structure

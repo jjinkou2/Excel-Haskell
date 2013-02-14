@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -XCPP -fglasgow-exts #-}
+{-# OPTIONS_GHC -XCPP #-}
 {-# OPTIONS -#include <stdlib.h> #-}
 {-# OPTIONS -#include "WideStringSrc.h" #-}
 {-# OPTIONS -#include "PointerSrc.h" #-}

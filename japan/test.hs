@@ -7,21 +7,7 @@ import Foreign.ForeignPtr    (ForeignPtr (..))
 import Foreign.C.String      (CWString, newCWString, withCWString, peekCWString)
 import Foreign.C.Types       (CLong(..), CInt(..))
 import Foreign.Marshal.Alloc (free)
-
---data IDispatch a = IDispatch a
--- --------------------------------------------------
--- 
--- interface IDispatch a
--- 
--- --------------------------------------------------
-data IDispatch_ a = IDispatch__
-                      
-type IDispatch a = IUnknown (IDispatch_ a)
-
-newtype IUnknown_ a  = Unknown  (ForeignPtr ())
-type IUnknown  a  = IUnknown_ a
-
---type HRESULT = Int32
+import Memory
 
 fichierTest3 = "E:/Programmation/haskell/Com/qos.xls"
 
@@ -48,6 +34,51 @@ main = do
     mapM_ cReleaseObject [cell, sheet, workSheets, activeWBook, workBooks, pExl]
     cOleUninitialize
 
+--data IDispatch a = IDispatch a
+-- --------------------------------------------------
+-- 
+-- interface IDispatch a
+-- 
+-- --------------------------------------------------
+data IDispatch_ a = IDispatch__
+                      
+type IDispatch a = IUnknown (IDispatch_ a)
+
+newtype IUnknown_ a  = Unknown  (ForeignPtr ())
+type IUnknown  a  = IUnknown_ a
+
+--type HRESULT = Int32
+-- --------------------------------------------------
+-- 
+-- interface EnumVariant
+-- 
+-- --------------------------------------------------
+data EnumVARIANT a      = EnumVARIANT
+type IEnumVARIANT a     = IUnknown (EnumVARIANT a)
+--iidIEnumVARIANT :: IID (IEnumVARIANT ())
+--iidIEnumVARIANT = mkIID "{00020404-0000-0000-C000-000000000046}"
+
+-- --------------------------------------------------
+-- 
+-- interface Com from Com.hs
+-- 
+-- --------------------------------------------------
+-- | @stringToGUID "{00000000-0000-0000-C000-0000 0000 0046}"@ translates the
+-- COM string representation for GUIDs into an actual 'GUID' value.
+{-stringToGUID :: String -> IO GUID
+stringToGUID str =
+   stackWideString str $ \xstr -> do
+   pg <- coAlloc sizeofGUID
+   primStringToGUID xstr (castPtr pg)
+   unmarshallGUID True pg
+-}
+sizeofGUID  :: Word32
+sizeofGUID  = 16
+-- --------------------------------------------------
+-- 
+-- Helpers/Converters
+-- 
+-- --------------------------------------------------
 instanceNew :: String -> IO (IDispatch a)
 instanceNew name = withCWString name cInstanceNew
 
@@ -75,7 +106,11 @@ method_S (pDisp, name) = withCWString name (cMethod_S pDisp)
 workBooksOpen  :: (IDispatch a) -> CWString -> IO ()
 workBooksOpen pDisp fileName =  withCWString "Open" (\x -> cMethod_S_S pDisp x fileName)
 
--- C の関数を呼ぶための定義
+-- --------------------------------------------------
+-- 
+-- C interface
+-- 
+-- --------------------------------------------------
 foreign import ccall   "InstanceNew"            cInstanceNew       :: CWString -> IO (IDispatch a)
 foreign import ccall   "getFullPathName"        cgetFullPathName   :: CWString -> IO CWString
 foreign import ccall   "PropertyGet_S"          cPropertyGet_S     :: (IDispatch a) -> CWString -> IO (IDispatch a)

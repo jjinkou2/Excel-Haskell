@@ -23,12 +23,15 @@ type IUnknown  a  = IUnknown_ a
 
 --type HRESULT = Int32
 
+fichierTest3 = "E:/Programmation/haskell/Com/qos.xls"
+
 main = do
     cOleInitialize 0
     pExl          <- instanceNew        "Excel.Application"
 
     workBooks     <- propertyGet_S pExl "Workbooks"
-    cFullFileName <- getFullPathName    "qos.xls"
+    --cFullFileName <- getFullPathName    "qos.xls"
+    cFullFileName <- newCWString    fichierTest3
     workBooksOpen workBooks cFullFileName
     free cFullFileName
 

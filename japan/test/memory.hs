@@ -10,9 +10,6 @@ where
 import Data.Word ( Word16, Word32 )
 import Data.Int ( Int32 )
 import Foreign.Ptr    (nullPtr,castPtr,Ptr(..))
-import HDirect (allocBytes)
-import PointerPrim (primAllocMemory)
-import Base
 
 
 
@@ -23,14 +20,17 @@ import Base
 coAlloc :: Word32 -> IO (Ptr a)
 coAlloc sz = allocMemory sz
 
-main = stringFromHR 13
+main = coAlloc 13
 
 --Primitives/helpers:
 
 allocMemory :: Word32 -> IO (Ptr a)
 allocMemory sz = do
-  a <- primAllocMemory sz
+  a <- cprimAllocMemory sz
   if a == nullPtr then
      ioError (userError "allocMemory: not enough memory")
    else
      return (castPtr a)
+
+
+foreign import ccall "primAllocMemory" cprimAllocMemory :: Word32 -> IO (Ptr ())

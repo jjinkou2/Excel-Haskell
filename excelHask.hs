@@ -16,12 +16,13 @@ getText :: IDispatch a -> IO String
 getText obj= obj # propertyGet_0 "Text"
 
 
+iidAppl  = mkIID "{00020400-0000-0000-C000-000000000046}"
 iidIDispatch_unsafe  = mkIID "{00020400-0000-0000-C000-000000000046}"
 
 createObjExl :: IO (IDispatch ()) 
 createObjExl = do
     clsidExcel <- clsidFromProgID "Excel.Application"
-    pExl <- coCreateInstance clsidExcel  Nothing LocalProcess iidIDispatch_unsafe
+    pExl <- coCreateInstance clsidExcel  Nothing LocalProcess iidAppl 
     return pExl
 
 
@@ -30,8 +31,9 @@ fichierTest = "C:/Users/lyup7323/Developpement/Haskell/Com/qos1.xls"
 
 main = coRun $ do 
     pExl <- createObjExl 
+    pExl <- getFileObject fichierTest2 "Excel.Application" 
     workBooks <- pExl #  propertyGet_0 "Workbooks" 
-    workBook <- workBooks #  propertyGet_1 "Open" fichierTest
+    workBook <- workBooks #  propertyGet_1 "Open" fichierTest2
     workSheets <- workBook #  propertyGet_0 "Worksheets"
     sheetSel <- workSheets # propertyGet_1 "Item" (1::Int) :: IO (IDispatch ())
     rng <- sheetSel # propertyGet_1 "Range" "C3"
@@ -42,6 +44,6 @@ main = coRun $ do
     workBooks # method_1_0 "Close"  xlDoNotSaveChanges
     pExl # method_0_0 "Quit"
 
-    mapM release [rng,sheetSel, workSheets,workBook, workBooks, pExl]
+    -- mapM release [rng,sheetSel, workSheets,workBook, workBooks, pExl]
     --mapM release [workBook,workBooks, pExl]
     --mapM release [workBooks, pExl]

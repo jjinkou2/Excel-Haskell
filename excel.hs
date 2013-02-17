@@ -78,6 +78,8 @@ openWorkBooks :: String -> IDispatch a -> IO (IDispatch())
 openWorkBooks fp obj = obj # propertyGet_1 "Open" fp 
 
 -- sheets
+getWSheets' :: IDispatch a -> IO (Sheet a) 
+getWSheets' obj = obj # propertyGet_0 "Worksheets"
 getWSheets :: IDispatch a -> IO (IDispatch ()) 
 getWSheets obj = obj # propertyGet_0 "Worksheets"
 
@@ -112,13 +114,13 @@ getCells col row obj = obj # propertyGet_2 "Cells" col row
 -- createObjectExcel 
 -- coming from Automation.hs and com.hs
 --
-
+iidAppl  = mkIID "{00020400-0000-0000-C000-000000000046}"
 iidIDispatch_unsafe  = mkIID "{00020400-0000-0000-C000-000000000046}"
 
 createObjExl :: IO (IDispatch ()) 
 createObjExl = do
     clsidExcel <- clsidFromProgID "Excel.Application"
-    pExl <- coCreateInstance clsidExcel  Nothing LocalProcess iidIDispatch_unsafe
+    pExl <- coCreateInstance clsidExcel  Nothing LocalProcess iidAppl
     return pExl
 
 -- tests 
@@ -155,7 +157,7 @@ readCell = coRun $ do
     release pExl
 
 ---
-main = coRun $ do 
+main2 = coRun $ do 
     pExl <- createObjExl
     pExl # showXl
     workBooks <- pExl # getWorkbooks
@@ -425,29 +427,44 @@ toInt xs = case (reads xs :: [(Int,String)] ) of
     - tests 
         - --}
 
-testIndice = coRun $ do
+main = coRun $ do
+
     pExl <- createObjExl
     workBooks <- pExl # getWorkbooks
     pExl # propertySet "DisplayAlerts" [inBool False]
-    workBook <- workBooks # openWorkBooks fichierTest4
+    workBook <- workBooks # openWorkBooks fichierTest3
     putStrLn  $"File loaded: " ++ fichierTest3
+    workSheets <- workBook # getWSheets'
 
-    workSheets <- workBook # getWSheets
+    rowsBiv <- rowsFromSheet workSheets "BIV"
+    putStrLn "got all datas from BIV"
+    printListData rowsBiv
+    putStrLn $ replicate 50 '-'
+    rowsBic <- rowsFromSheet workSheets "BIC"
+    putStrLn "got all datas from BIC"
+    printListData rowsBic
 
-    sheetSel <- workSheets # propertyGet_1 "Item" "BIV"
-    sheetSel # propertySet "Unprotect" []
+    workBooks # method_1_0 "Close" xlDoNotSaveChanges
+    pExl # method_0_0 "Quit"
 
-    rng1 <- sheetSel # propertyGet_1 "Range" "C7"
+rowsFromSheet :: Sheet a -> String -> IO [String] 
+rowsFromSheet workSheets sheet = do 
+    sheetSel <- workSheets # propertyGet_1 "Item" sheet 
+
+{-    rng1 <- sheetSel # propertyGet_1 "Range" "C7"
     endrow <- rng1 # propertyGet_1 "End" xlDown
     row <- endrow # propertyGet_0 "Row" :: IO Int
+    -}
+    let row = 79
     let lastrow =  "C7:BC"++ show row
     putStrLn $ "endrow = " ++  lastrow
     rng <- sheetSel # propertyGet_1 "Range" lastrow
-    (_,r) <- rng # enumVariants :: IO (Int,[String])
-    putStrLn "got all datas"
+    fmap snd $ rng # enumVariants
 
-    let kpiData toX n  = map (toX.(r!!).(+53*n)) [1..52]
-        kpiName = map (\n -> r!!(53*n)) $ [0..72]
+
+printListData rows = do     
+    let kpiData toX n  = map (toX.(rows!!).(+53*n)) [1..52]
+        kpiName = map (\n -> rows!!(53*n)) $ [0..72]
         kpiIndMap = M.fromList $ zip kpiName [0..]
 
         rowSite     = M.lookup "Sites" kpiIndMap
@@ -550,16 +567,10 @@ testIndice = coRun $ do
     print avail 
     putStrLn "----unvail ---"
     print unavail 
-    --}
-    workBooks # method_1_0 "Close" xlDoNotSaveChanges
-    pExl # method_0_0 "Quit"
-    mapM release [endrow,rng,rng1, sheetSel, workSheets, workBook, workBooks, pExl]
 
-    
-    workBooks # method_1_0 "Close" xlDoNotSaveChanges
-    pExl # method_0_0 "Quit"
-    mapM release [endrow,rng,rng1, sheetSel, workSheets, workBook, workBooks, pExl]
-
+data KPIType = Int | Double | String
+data KpiStruct = KpiStruct { kpiName :: String, kpiData :: [KPIType]} 
+                deriving (show)
 {--
     - structure
         
@@ -580,19 +591,17 @@ testSplit = coRun $ do
     pExl # propertySet "DisplayAlerts" [inBool False]
     workBook <- workBooks # openWorkBooks fichierTest3
     putStrLn  $"File loaded: " ++ fichierTest3
+    workSheets <- workBook # getWSheets'
 
-    workSheets <- workBook # getWSheets
+    rows <- rowsFromSheet workSheets "BIV"
+    putStrLn "got all datas from BIV"
 
-    sheetSel <- workSheets # propertyGet_1 "Item" "BIV"
+    printDataSplit rows  
 
-    rng1 <- sheetSel # propertyGet_1 "Range" "C7"
-    endrow <- rng1 # propertyGet_1 "End" xlDown
-    row <- endrow # propertyGet_0 "Row" :: IO Int
-    let lastrow =  "C7:BC"++ show row
-    putStrLn $ "endrow = " ++  lastrow
-    rng <- sheetSel # propertyGet_1 "Range" lastrow
-    (_,r) <- rng # enumVariants :: IO (Int,[String])
-    
+    workBooks # method_1_0 "Close" xlDoNotSaveChanges
+    pExl # method_0_0 "Quit"
+  
+printDataSplit r = do 
     let part xss        = map (\(x:xs) -> (x,xs)) xss
         kmKPI           = M.fromList.part.chunksOf 53 $ r
         defKpi          = replicate 52 ""
@@ -665,9 +674,6 @@ testSplit = coRun $ do
     putStrLn "----unvail ---"
     print unAvail 
     
-    workBooks # method_1_0 "Close" xlDoNotSaveChanges
-    pExl # method_0_0 "Quit"
-    mapM release [endrow,rng,rng1, sheetSel, workSheets, workBook, workBooks, pExl]
 
 testEndRow = coRun $ do
     pExl <- createObjExl
@@ -686,4 +692,3 @@ testEndRow = coRun $ do
 
     workBooks # method_1_0 "Close" xlDoNotSaveChanges
     pExl # method_0_0 "Quit"
-    mapM release [rng, sheetSel, workSheets, workBook, workBooks, pExl]

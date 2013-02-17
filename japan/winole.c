@@ -7,10 +7,10 @@
 #define ALLOCA_N(type,n) (type*)alloca(sizeof(type)*(n))
 
 
-
 IDispatch *mallocDispatch(){
     return (struct IDispatch *)malloc( sizeof(struct IDispatch) );
 }
+
 // oleauto.h:#define V_VT(X) ((X)->vt)
 // oleauto.h:#define V_ISBYREF(X) (V_VT(X)&VT_BYREF)
 IDispatch *Variant2Dispatch(VARIANT *pVariant){

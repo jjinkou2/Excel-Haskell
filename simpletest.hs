@@ -1,48 +1,56 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 
-import Control.Applicative ((<$>), (<*>), empty)
 import Data.Aeson
 import qualified Data.Text as T 
 import Data.Aeson.Encode.Pretty
 import qualified Data.ByteString.Lazy.Char8 as BL
 
-data Coord = Coord { x :: Double, y :: Double }
-             deriving (Show)
+type Services = [ServStruct]
 
-data KpiVal = KpiNum 
 
--- A ToJSON instance allows us to encode a value as JSON.
-
-instance ToJSON Coord where
-  toJSON (Coord xV yV) = object [ "x" .= xV,
-                                  "y" .= yV ]
-
--- A FromJSON instance allows us to decode a value from JSON.  This
--- should match the format used by the ToJSON instance.
-
-mos = decode  "{\"toto\": [4.5,2.3,4.9] }"::Maybe Value
-mos2 = toJSON ([4.3,2.3,4.9]::[Double])
-comment= toJSON  (["Bon","Mauvais","Tres Bon"]::[String])
-kpiMos = KpiStruct "mos" mos2
-kpiCommentMos = KpiStruct "CommentMos" comment
+data ServStruct = ServStruct { servName :: T.Text , kpis :: [KpiStruct] } deriving (Show)
 
 data KpiStruct = KpiStruct {kpiStructName :: T.Text, kpiStructData :: Value} deriving (Show)
 
 instance ToJSON KpiStruct where
     toJSON KpiStruct{..} = object [kpiStructName .= kpiStructData]
---test = BL.putStrLn.encodePretty.toJSON $ ["toto","toti"]
 
-instance FromJSON Coord where
-  parseJSON (Object v) = Coord <$>
-                         v .: "x" <*>
-                         v .: "y"
-  parseJSON _          = empty
+instance ToJSON ServStruct where
+    toJSON ServStruct{..} = object [servName .= kpis]
 
-test = BL.putStrLn.encode $ kpiCommentMos
 
-main :: IO ()
-main = do
-  let req = decode "{\"x\":3.0,\"y\":-1.0}" :: Maybe Coord
-  print req
-  let reply = Coord 123.4 20
-  BL.putStrLn (encode reply)
+main = BL.putStrLn.servToBS $ services
+
+servToBS :: Services -> BL.ByteString 
+servToBS  = encode . map toJSON
+
+services :: Services
+services = map toServStruct servList
+
+toServStruct :: String -> ServStruct
+toServStruct s = ServStruct s (getKpitStruct s)
+
+-- value test
+servList :: [T.Text]
+servList = ["BIV","BTIC","BIC"]
+mos = toJSON ([4.3,2.3,4.9]::[Double])
+comment = toJSON  (["Bon","Mauvais","Tres Bon"]::[String])
+
+kpiTup = zip ["mos","CommentMos"] [mos,comment]
+toKpiStruct dict = [KpiStruct x y |(x,y) <- dict ]
+
+----test
+getKpitStruct :: T.Text -> [KpiStruct]
+getKpitStruct s = toKpiStruct kpiTup
+
+
+
+----test
+
+--kpisBIV = ServStruct "BIV"  (toKpiStruct kpiTup)
+--kpisBIC = ServStruct "BIC" (toKpiStruct kpiTup)
+--kpisBTIC = ServStruct "BTIC" (toKpiStruct kpiTup)
+--services = [kpisBIV,kpisBIC, kpisBTIC]
+
+
+

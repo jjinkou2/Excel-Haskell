@@ -432,8 +432,8 @@ main = coRun $ do
     pExl <- createObjExl
     workBooks <- pExl # getWorkbooks
     pExl # propertySet "DisplayAlerts" [inBool False]
-    workBook <- workBooks # openWorkBooks fichierTest3
-    putStrLn  $"File loaded: " ++ fichierTest3
+    workBook <- workBooks # openWorkBooks fichierTest4
+    putStrLn  $"File loaded: " ++ fichierTest4
     workSheets <- workBook # getWSheets'
 
     rowsBiv <- rowsFromSheet workSheets "BIV"
@@ -464,33 +464,34 @@ rowsFromSheet workSheets sheet = do
 
 printListData rows = do     
     let kpiData toX n  = map (toX.(rows!!).(+53*n)) [1..52]
-        kpiName = map (\n -> rows!!(53*n)) $ [0..72]
-        kpiIndMap = M.fromList $ zip kpiName [0..]
+        kpiName     = map (\n -> rows!!(53*n)) $ [0..72]
+        kpiIndMap   = M.fromList $ zip kpiName [0..]
+        rowNb s     = M.lookup s kpiIndMap
 
-        rowSite     = M.lookup "Sites" kpiIndMap
-        rowChannels = M.lookup "Nb channels" kpiIndMap
-        rowMinutes  = M.lookup "Minutes (Millions)" kpiIndMap
-        rowCalls    = M.lookup "Calls (Millions)" kpiIndMap
-        rowPgad     = M.lookup "Post Gateway Answer Delay (sec)" kpiIndMap
-        rowAsr      = M.lookup "Answer Seizure Ratio (%)" kpiIndMap
-        rowNer      = M.lookup "Network Efficiency Ratio (%)" kpiIndMap
-        rowAttps    = M.lookup "ATTPS = Average Trouble Ticket Per Site" kpiIndMap
-        rowAfis     = M.lookup "Average FT Incident per Site\" AFIS" kpiIndMap
-        rowMos      = M.lookup "Mean Opinion Score (PESQ)" kpiIndMap
-        rowPdd      = M.lookup "Post Dialing Delay (sec)" kpiIndMap
-        rowCsr      = M.lookup "Call Sucessful Ratio" kpiIndMap
-        rowRtd      = M.lookup "RTD average" kpiIndMap
-        rowAvail    = M.lookup "Availability ratio HO (outage&changes)" kpiIndMap
-        rowUnAvail  = M.lookup "Unavailability minutes HO (outage&changes)" kpiIndMap
-        rowComInd1  = M.lookup "CommentIndispo1" kpiIndMap
-        rowComInd2  = M.lookup "CommentIndispo2" kpiIndMap
-        rowComInd3  = M.lookup "CommentIndispo3" kpiIndMap
-        rowComInd4  = M.lookup "CommentIndispo4" kpiIndMap
-        rowComInd5  = M.lookup "CommentIndispo5" kpiIndMap
-        rowComAfis1 = M.lookup "CommentAFIS1" kpiIndMap
-        rowComAfis2 = M.lookup "CommentAFIS2" kpiIndMap
-        rowComMos1  = M.lookup "CommentMOS1" kpiIndMap
-        rowComMos2  = M.lookup "CommentMOS2" kpiIndMap
+        rowSite     = rowNb "Sites"
+        rowChannels = rowNb "Nb channels"
+        rowMinutes  = rowNb "Minutes (Millions)"
+        rowCalls    = rowNb "Calls (Millions)" 
+        rowPgad     = rowNb "Post Gateway Answer Delay (sec)" 
+        rowAsr      = rowNb "Answer Seizure Ratio (%)" 
+        rowNer      = rowNb "Network Efficiency Ratio (%)" 
+        rowAttps    = rowNb "ATTPS = Average Trouble Ticket Per Site" 
+        rowAfis     = rowNb "Average FT Incident per Site\" AFIS" 
+        rowMos      = rowNb "Mean Opinion Score (PESQ)" 
+        rowPdd      = rowNb "Post Dialing Delay (sec)" 
+        rowCsr      = rowNb "Call Sucessful Ratio" 
+        rowRtd      = rowNb "RTD average" 
+        rowAvail    = rowNb "Availability ratio HO (outage&changes)" 
+        rowUnAvail  = rowNb "Unavailability minutes HO (outage&changes)" 
+        rowComInd1  = rowNb "CommentIndispo1" 
+        rowComInd2  = rowNb "CommentIndispo2" 
+        rowComInd3  = rowNb "CommentIndispo3" 
+        rowComInd4  = rowNb "CommentIndispo4" 
+        rowComInd5  = rowNb "CommentIndispo5" 
+        rowComAfis1 = rowNb "CommentAFIS1" 
+        rowComAfis2 = rowNb "CommentAFIS2" 
+        rowComMos1  = rowNb "CommentMOS1" 
+        rowComMos2  = rowNb "CommentMOS2" 
 
         lookupData toX fill rowKpi = maybe (replicate 52 fill) -- default value [fill,...fill]
                                        (kpiData toX) -- handler 
@@ -568,9 +569,9 @@ printListData rows = do
     putStrLn "----unvail ---"
     print unavail 
 
-data KPIType = Int | Double | String
-data KpiStruct = KpiStruct { kpiName :: String, kpiData :: [KPIType]} 
-                deriving (show)
+--data KPIType = Int | Double | String
+--data KpiStruct = KpiStruct { structKpiName :: String, structKpiData :: [KPIType]} 
+--                deriving (show)
 {--
     - structure
         

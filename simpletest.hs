@@ -5,15 +5,11 @@ import qualified Data.Text as T
 import Data.Aeson.Encode.Pretty
 import qualified Data.ByteString.Lazy.Char8 as BL
 
-type Services = [ServStruct]
+import KpiStructure
 
-
-data ServStruct = ServStruct { servName :: T.Text , kpis :: [KpiStruct] } deriving (Show)
-
-data KpiStruct = KpiStruct {kpiStructName :: T.Text, kpiStructData :: Value} deriving (Show)
 
 instance ToJSON KpiStruct where
-    toJSON KpiStruct{..} = object [kpiStructName .= kpiStructData]
+    toJSON KpiStruct{..} = object [kpiName .= kpiData]
 
 instance ToJSON ServStruct where
     toJSON ServStruct{..} = object [servName .= kpis]
@@ -27,14 +23,14 @@ servToBS  = encode . map toJSON
 services :: Services
 services = map toServStruct servList
 
-toServStruct :: String -> ServStruct
+toServStruct :: T.Text -> ServStruct
 toServStruct s = ServStruct s (getKpitStruct s)
 
 -- value test
 servList :: [T.Text]
 servList = ["BIV","BTIC","BIC"]
 mos = toJSON ([4.3,2.3,4.9]::[Double])
-comment = toJSON  (["Bon","Mauvais","Tres Bon"]::[String])
+comment = rowDataToValue  (["Bon","Mauvais","Tres Bon"]::[String])
 
 kpiTup = zip ["mos","CommentMos"] [mos,comment]
 toKpiStruct dict = [KpiStruct x y |(x,y) <- dict ]
@@ -44,6 +40,8 @@ getKpitStruct :: T.Text -> [KpiStruct]
 getKpitStruct s = toKpiStruct kpiTup
 
 
+rowDataToValue :: ToJSON a => a -> Value 
+rowDataToValue = toJSON
 
 ----test
 

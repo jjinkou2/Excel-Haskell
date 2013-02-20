@@ -6,10 +6,8 @@ import Data.List.Split (endBy)
 
 import KpiStructure
 
-import Data.Aeson
+import Data.Aeson (toJSON)
 import qualified Data.Text as T 
-import Data.Aeson.Encode.Pretty
-import qualified Data.ByteString.Lazy.Char8 as BL
 
 {--
     - helpers
@@ -36,7 +34,7 @@ toInt xs = case (reads xs :: [(Int,String)] ) of
         - --}
 
 
-
+toServStruct serv rows = ServStruct serv (rawToStruct rows) 
 
 rawToStruct :: [String] -> [KpiStruct]    
 rawToStruct rows =  [ nbSites, nbChannels, nbMinutes, asr, ner, attps, afis, mos

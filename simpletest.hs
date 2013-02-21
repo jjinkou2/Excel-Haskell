@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 
 import Data.Aeson
+import Data.Aeson.Types (Pair)
 import qualified Data.Text as T 
 import Data.Aeson.Encode.Pretty
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -32,8 +33,15 @@ servList = ["BIV","BTIC","BIC"]
 mos = toJSON ([4.3,2.3,4.9]::[Double])
 comment = rowDataToValue  (["Bon","Mauvais","Tres Bon"]::[String])
 
+kpiTup :: [Pair]
 kpiTup = zip ["mos","CommentMos"] [mos,comment]
 toKpiStruct dict = [KpiStruct x y |(x,y) <- dict ]
+
+kpiTupToValue ::  [Pair] -> Value
+kpiTupToValue dict = object.map (uncurry (.=)) $ dict
+
+servToVal ::  T.Text -> [Pair] -> Value
+servToVal s kpitup = object [s.= kpiTupToValue kpitup]
 
 ----test
 getKpitStruct :: T.Text -> [KpiStruct]

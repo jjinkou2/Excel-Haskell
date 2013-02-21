@@ -5,6 +5,7 @@ import ExcelCom
 import RawToJSON
 import KpiStructure
 import qualified Data.Text as T 
+import Data.Aeson.Types (Pair)
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as BL
 
@@ -31,13 +32,15 @@ main1 = coRun $ do
     xlQuit workBooks pExl
 
 
-servToBS :: Services -> BL.ByteString 
-servToBS  = encode . map toJSON
+servToBS :: [Pair] -> BL.ByteString 
+servToBS  = encode . object 
+servToBS' :: Services -> BL.ByteString 
+servToBS'  = encode . map toJSON
 
 main = coRun $ do 
     (pExl, workBooks, workSheets) <- xlInit
-    xs <- mapM (processRowData workSheets) sheetsName
-    BL.writeFile "json.txt" $ servToBS xs     
+    xs <- mapM (processRowData'' workSheets) sheetsName
+    BL.writeFile "json.txt" $ servToBS' xs     
     
 
     xlQuit workBooks pExl
@@ -58,8 +61,13 @@ xlInit = do
     return (pExl, workBooks, workSheets)
     
 
-processRowData :: Sheet a -> String -> IO ServStruct
-processRowData sheets sheetName= do 
+processRowData :: Sheet a -> String -> IO Pair
+processRowData sheets sheetName = do 
+    rowsService <- rowsFromSheet sheets sheetName
+    return $ servToPair rowsService (T.pack sheetName) 
+    
+processRowData'' :: Sheet a -> String -> IO ServStruct
+processRowData'' sheets sheetName= do 
     rowsService <- rowsFromSheet sheets sheetName
     return $ ServStruct (T.pack sheetName) (rawToStruct rowsService)
     

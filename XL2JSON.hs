@@ -39,8 +39,8 @@ xlInit = do
     pExl <- createObjExl
     workBooks <- pExl # getWorkbooks
     pExl # propertySet "DisplayAlerts" [inBool False]
-    workBook <- workBooks # openWorkBooks fichierTest3
-    putStrLn  $"File loaded: " ++ fichierTest3
+    workBook <- workBooks # openWorkBooks fichierTest4
+    putStrLn  $"File loaded: " ++ fichierTest4
     workSheets <- workBook # getWSheets'
     return (pExl, workBooks, workSheets)
     

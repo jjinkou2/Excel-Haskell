@@ -20,7 +20,6 @@ parse = V.unfoldr step
 
 
 
-    -- reads double or put 0 
 toDouble :: L.ByteString -> Double
 toInt xs = case L.readInt xs of
     Just (d,s) -> d

@@ -29,20 +29,27 @@ toInt xs = case (reads xs :: [(Int,String)] ) of
     _ -> 0
 
 
-kpiNames =  ["nbSites", "nbChannels", "nbMinutes", "asrVal", "ner", "attps"
-            , "afis", "mos", "pdd", "csr", "rtd", "avail", "unavail", "commentIndisp1"
-            , "commentIndisp2", "commentIndisp3", "commentIndisp4", "commentIndisp5"
-            , "commentAFIS1", "commentAFIS2",  "commentMOS1", "commentMOS2"]
+kpis =  ["nbSites", "nbChannels", "nbCalls", "nbMinutes", "asr", "ner"
+        ,"PGAD" ,"attps", "afis", "mos", "pdd", "csr", "rtd", "avail"
+        , "unavail", "commentIndisp1", "commentIndisp2", "commentIndisp3"
+        , "commentIndisp4", "commentIndisp5", "commentAFIS1", "commentAFIS2"
+        ,  "commentMOS1", "commentMOS2"]
 {--
     - tests 
         - --}
+servToPair' :: [Value] -> T.Text -> Pair
+servToPair' kpiValues s  = s .= kpisJSON
+    where kpisJSON =  object $ zip kpis kpiValues
 
 
 servToPair ::  [String] -> T.Text -> Pair
 servToPair rows s  = s.= rawToVal rows
 
+
+
+
 rawToVal :: [String] -> Value 
-rawToVal rows  = object $ zip kpiNames kpiValues
+rawToVal rows  = object $ zip kpis kpiValues
 
     where
 
@@ -112,3 +119,7 @@ rawToVal rows  = object $ zip kpiNames kpiValues
         kpiName     = map (\n -> rows!!(53*n)) $ [0..72]
         kpiIndMap   = M.fromList $ zip kpiName [0..]
         rowNb s     = M.lookup s kpiIndMap
+
+
+
+

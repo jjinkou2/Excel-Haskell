@@ -129,7 +129,7 @@ newExcel = coRun $ do
     pExl <- createObjExl 
     propertySet "Visible" [inBool True]  pExl
 
-fichierTest  = fichierTest3  
+fichierTest  = fichierTest4
 fichierTest1 = "C:/Users/lyup7323/Developpement/Haskell/Com/qos1.xls"
 fichierTest2 = "E:/Programmation/haskell/Com/qos1.xls"
 fichierTest3 = "E:/Programmation/haskell/Com/qos.xls"
@@ -350,7 +350,7 @@ printData workSheets sheetName = do
     print kpi
     
 
-testCell = coRun $ do 
+testCell = coRun $ do --(1.62 secs, 39329360 bytes)
     pExl <- createObjExl
     workBooks <- pExl # getWorkbooks
     pExl # propertySet "DisplayAlerts" [inBool False]
@@ -433,7 +433,7 @@ toInt xs = case (reads xs :: [(Int,String)] ) of
     - tests 
         - --}
 
-main = coRun $ do
+main = coRun $ do -- (3.10 secs, 31126520 bytes)
 
     pExl <- createObjExl
     workBooks <- pExl # getWorkbooks
@@ -592,7 +592,7 @@ KpiStruct = data    { kpiName :: String
 
         --}
 
-testSplit = coRun $ do
+testSplit = coRun $ do --(2.67 secs, 30887528 bytes)
     pExl <- createObjExl
     workBooks <- pExl # getWorkbooks
     pExl # propertySet "DisplayAlerts" [inBool False]
@@ -703,3 +703,32 @@ testEndRow = coRun $ do
 
     workBooks # method_1_0 "Close" xlDoNotSaveChanges
     pExl # method_0_0 "Quit"
+
+
+testPerfEnum = coRun $ do --(1.15 secs, 15790020 bytes) 
+    pExl <- createObjExl
+    workBooks <- pExl # getWorkbooks
+    pExl # propertySet "DisplayAlerts" [inBool False]
+    workBook <- workBooks # openWorkBooks fichierTest
+    putStrLn  $"File loaded: " ++ fichierTest
+
+    workSheets <- workBook # getWSheets
+
+    sheetSel <- workSheets # propertyGet_1 "Item" "BIV"
+
+    rng <- sheetSel # propertyGet_1 "Range" "D7:BC79"
+    (_,r) <- rng # enumVariants :: IO (Int,[String])
+    print r
+
+testPerfGetCell = coRun $ do  --(1.47 secs, 22859856 bytes)
+    pExl <- createObjExl
+    workBooks <- pExl # getWorkbooks
+    pExl # propertySet "DisplayAlerts" [inBool False]
+    workBook <- workBooks # openWorkBooks fichierTest
+    putStrLn  $"File loaded: " ++ fichierTest
+
+    workSheets <- workBook # getWSheets
+
+    sheetSel <- workSheets # propertyGet_1 "Item" "BIV"
+    vals <- mapM (\row -> mapM (\x -> sheetSel # getCells row x ## getText) [4..55]) [7..79]
+    print (vals)

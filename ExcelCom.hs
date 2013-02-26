@@ -10,7 +10,7 @@ module ExcelCom (
         , select
         , showXl, hideXl
         , getActiveWB, getWorkbooks, openWorkBooks
-        , getWSheets', getWSheets, getSheet, getSheetName, sheetSelect, getActiveSheet, getActiveSheet0
+        , getWSheets, getSheet, getSheetName, sheetSelect, getActiveSheet, getActiveSheet0
         , setSheetName
         , getRange, getCells
         ,createObjExl
@@ -99,9 +99,7 @@ openWorkBooks :: String -> IDispatch a -> IO (IDispatch())
 openWorkBooks fp obj = obj # propertyGet_1 "Open" fp 
 
 -- sheets
-getWSheets' :: IDispatch a -> IO (Sheet a) 
-getWSheets' obj = obj # propertyGet_0 "Worksheets"
-getWSheets :: IDispatch a -> IO (IDispatch ()) 
+getWSheets :: IDispatch a -> IO (Sheet a) 
 getWSheets obj = obj # propertyGet_0 "Worksheets"
 
 getSheet :: (Variant a0,Variant a1)=> a0  -> IDispatch a1 -> IO (IDispatch ()) 

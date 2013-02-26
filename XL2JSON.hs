@@ -1,65 +1,51 @@
-
-{-# LANGUAGE OverloadedStrings , RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 import ExcelCom 
-import RawToJSON
 import qualified Data.Map as M (fromList, lookup)
+import Data.List.Split (endBy)
 import qualified Data.Text as T 
 import Data.Aeson.Types (Pair,Value)
 import Data.Aeson
-import qualified Data.ByteString.Lazy.Char8 as BL
+import qualified Data.ByteString.Lazy.Char8 as BL 
 
-fichierTest = fichierTest4    
 fichierTest1 = "C:/Users/lyup7323/Developpement/Haskell/Com/qos1.xls"
 fichierTest2 = "E:/Programmation/haskell/Com/qos1.xls"
 fichierTest3 = "E:/Programmation/haskell/Com/qos.xls"
 fichierTest4 = "C:/Users/lyup7323/Developpement/Haskell/Com/qos.xls"
 
+--sheetsName = ["BIV","BIC","BTIP_H323","BTIC","MCCE","OPITML","FIA","BTIP_SIP"
+--             ,"OVP","BTELU"]
 
+--sheetsName = ["MCCE","OPITML","FIA","BTIP_SIP"]
+sheetsName = ["FIA"]
+main = xl2json fichierTest4 >>= BL.writeFile "json.txt"
 
-sheetsName = ["BIV","BIC"]
-
-
-servToBS :: [Pair] -> BL.ByteString 
-servToBS  = encode . object 
-
-
-main = coRun $ do 
-    (pExl, workBooks, workSheets) <- xlInit
-    xs <- mapM (processRowData' workSheets) sheetsName
-    BL.writeFile "json.txt" $ servToBS xs     
-
+xl2json :: String -> IO BL.ByteString
+xl2json file = coRun $ do 
+    (pExl, workBooks, workSheets) <- xlInit file
+    xs <- mapM (processRowData workSheets) sheetsName
     xlQuit workBooks pExl
+    return $ servToBS xs
 
-    
-    
 xlQuit workBooks appXl = do
     workBooks # method_1_0 "Close" xlDoNotSaveChanges
     appXl # method_0_0 "Quit"
 
-xlInit = do   
+xlInit file = do   
     pExl <- createObjExl
     workBooks <- pExl # getWorkbooks
     pExl # propertySet "DisplayAlerts" [inBool False]
-    workBook <- workBooks # openWorkBooks fichierTest
-    putStrLn  $"File loaded: " ++ fichierTest
-    workSheets <- workBook # getWSheets'
+    workBook <- workBooks # openWorkBooks file
+    putStrLn  $"File loaded: " ++ file
+    workSheets <- workBook # getWSheets
     return (pExl, workBooks, workSheets)
     
-
 processRowData :: Sheet a -> String -> IO Pair
 processRowData sheets sheetName = do 
     putStrLn $ "got all datas from " ++ sheetName
     putStrLn $ replicate 50 '-'
-    rowsService <- rowsFromSheet sheets sheetName
-    return $ servToPair rowsService (T.pack sheetName)  
-
-processRowData' :: Sheet a -> String -> IO Pair
-processRowData' sheets sheetName = do 
-    putStrLn $ "got all datas from " ++ sheetName
-    putStrLn $ replicate 50 '-'
     kpisVal <- valuesFromSheet sheets sheetName
-    return $ servToPair' kpisVal (T.pack sheetName)    
+    return $ servToPair kpisVal (T.pack sheetName)    
     
 valuesFromSheet :: Sheet a -> String -> IO [Value] 
 valuesFromSheet workSheets sheetName= do 
@@ -139,16 +125,30 @@ valuesFromSheet workSheets sheetName= do
     return kpiValues
 
 
-    
+toDouble :: String -> Double
+toDouble xs = case (reads.chgComma.endBy "," $ xs :: [(Double,String)] ) of
+    [(d,s)] -> d
+    _ -> 0
+    where 
+        chgComma [x,y] = x ++ "." ++ (take 2 y)
+        chgComma xs = concat xs
 
-rowsFromSheet :: Sheet a -> String -> IO [String] 
-rowsFromSheet workSheets sheetName= do 
-    sheetSel <- workSheets # propertyGet_1 "Item" sheetName
-
-    let row = 79
-    let lastrow =  "C7:BC"++ show row
-    putStrLn $ "endrow = " ++  lastrow
-    rng <- sheetSel # propertyGet_1 "Range" lastrow
-    fmap snd $ rng # enumVariants
+toInt xs = case (reads xs :: [(Int,String)] ) of
+    [(d,s)] -> d
+    _ -> 0
 
 
+kpis =  ["nbSites", "nbChannels", "nbCalls", "nbMinutes", "asr", "ner"
+        ,"PGAD" ,"attps", "afis", "mos", "pdd", "csr", "rtd", "avail"
+        , "unavail", "commentIndisp1", "commentIndisp2", "commentIndisp3"
+        , "commentIndisp4", "commentIndisp5", "commentAFIS1", "commentAFIS2"
+        ,  "commentMOS1", "commentMOS2"]
+{--
+    - tests 
+        - --}
+servToPair :: [Value] -> T.Text -> Pair
+servToPair kpiValues s  = s .= kpisJSON
+    where kpisJSON =  object $ zip kpis kpiValues
+
+servToBS :: [Pair] -> BL.ByteString 
+servToBS  = encode . object

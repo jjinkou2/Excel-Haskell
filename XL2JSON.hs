@@ -13,13 +13,16 @@ fichierTest2 = "E:/Programmation/haskell/Com/qos1.xls"
 fichierTest3 = "E:/Programmation/haskell/Com/qos.xls"
 fichierTest4 = "C:/Users/lyup7323/Developpement/Haskell/Com/qos.xls"
 
---sheetsName = ["BIV","BIC","BTIP_H323","BTIC","MCCE","OPITML","FIA","BTIP_SIP"
---             ,"OVP","BTELU"]
+sheetsName = ["BIV","BIC","BTIP_H323","BTIC","MCCE","OPITML","FIA","BTIP_SIP" ,"OVP","BTELU"]
 
 --sheetsName = ["MCCE","OPITML","FIA","BTIP_SIP"]
-sheetsName = ["FIA"]
+-- sheetsName = ["BIV","BIC","BTIP_H323","BTIC","MCCE","FIA"]
 main = xl2json fichierTest4 >>= BL.writeFile "json.txt"
-
+getData' sheet cast row = mapM (castText cast sheet row) [4..55] 
+            
+castText cast sheet row col = do 
+    vals <- sheet # getCells row col ## getValue 
+    return $ cast vals
 xl2json :: String -> IO BL.ByteString
 xl2json file = coRun $ do 
     (pExl, workBooks, workSheets) <- xlInit file
@@ -85,16 +88,20 @@ valuesFromSheet workSheets sheetName= do
         lookupData cast fill rowKpi  = maybe (return $ replicate 52 fill) -- default value [fill,...fill]
                                        (getData cast) -- handler 
                                        rowKpi -- Nothing or Just (kpi's row) 
-        getData cast row = do 
-            vals <- mapM (\x -> sheetSel # getCells row x ## getValue) [4..55]
-            return $ fmap cast vals 
+
+        getData cast row = mapM (castText cast sheetSel row) [4..55] 
+            where
+                castText cast sheet row col = do 
+                    vals <- sheet # getCells row col ## getFormula 
+                    return $ cast vals 
+                    
 
     nbSitesVal         <- fmap toJSON $ lookupData toInt 0 rowSite
     nbChannelsVal      <- fmap toJSON $ lookupData toInt 0 rowChannels
     nbMinutesVal       <- fmap toJSON $ lookupData toDouble 0.0 rowMinutes
     nbCallsVal         <- fmap toJSON $ lookupData toDouble 0.0 rowCalls
     postGADVal         <- fmap toJSON $ lookupData toDouble 0.0 rowPgad
-    asrVal             <- fmap toJSON $  lookupData toDouble 0.0 rowAsr
+    asrVal             <- fmap toJSON $ lookupData toDouble 0.0 rowAsr
     nerVal             <- fmap toJSON $ lookupData toDouble 0.0 rowNer
     attpsVal           <- fmap toJSON $ lookupData toDouble 0.0 rowAttps
     afisVal            <- fmap toJSON $ lookupData toDouble 0.0 rowAfis 

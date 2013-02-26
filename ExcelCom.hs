@@ -5,7 +5,7 @@ module ExcelCom (
         , xlWorkbookDefault, xlSaveChanges, xlDoNotSaveChanges
         , xlUp, xlDown
         , getActiveCell
-        , getText, getValue, getInt, getDouble, getStr, getRanges, getCells0
+        , getText,getFormula, getValue, getInt, getDouble, getStr, getRanges, getCells0
         , setValue
         , select
         , showXl, hideXl
@@ -46,6 +46,9 @@ xlUp = 0xffffefbe
 getActiveCell :: IDispatch a -> IO (IDispatch ()) 
 getActiveCell obj = obj # propertyGet_0 "ActiveCell"
 
+
+getFormula :: IDispatch a -> IO String
+getFormula obj= obj # propertyGet_0 "Formula"
 getText :: IDispatch a -> IO String
 getText obj= obj # propertyGet_0 "Text"
 

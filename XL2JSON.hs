@@ -6,6 +6,7 @@ import Data.List.Split (endBy)
 import qualified Data.Text as T 
 import Data.Aeson.Types (Pair,Value)
 import Data.Aeson
+import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy.Char8 as BL 
 
 fichierTest1 = "C:/Users/lyup7323/Developpement/Haskell/Com/qos1.xls"
@@ -21,7 +22,7 @@ main = xl2json fichierTest4 >>= BL.writeFile "json.txt"
 getData' sheet cast row = mapM (castText cast sheet row) [4..55] 
             
 castText cast sheet row col = do 
-    vals <- sheet # getCells row col ## getValue 
+    vals <- sheet # getCells row col ## getFormula 
     return $ cast vals
 xl2json :: String -> IO BL.ByteString
 xl2json file = coRun $ do 
@@ -132,13 +133,14 @@ valuesFromSheet workSheets sheetName= do
     return kpiValues
 
 
+-- take 2 decimals
+trunc :: Double -> Double
+trunc double = (fromInteger $ round $ double * (10^2)) / (10.0 ^^2)
 toDouble :: String -> Double
-toDouble xs = case (reads.chgComma.endBy "," $ xs :: [(Double,String)] ) of
-    [(d,s)] -> d
+--toDouble xs = case (reads.chgComma.endBy "," $ xs :: [(Double,String)] ) of
+toDouble xs = case (reads xs :: [(Double,String)] ) of
+    [(d,s)] -> trunc d
     _ -> 0
-    where 
-        chgComma [x,y] = x ++ "." ++ (take 2 y)
-        chgComma xs = concat xs
 
 toInt xs = case (reads xs :: [(Int,String)] ) of
     [(d,s)] -> d
@@ -158,4 +160,4 @@ servToPair kpiValues s  = s .= kpisJSON
     where kpisJSON =  object $ zip kpis kpiValues
 
 servToBS :: [Pair] -> BL.ByteString 
-servToBS  = encode . object
+servToBS  = encodePretty . object

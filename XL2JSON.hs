@@ -1,16 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- ghc --make XL2JSON.hs -o testBS -rtsopts -prof -auto-all -caf-all
+
 import ExcelCom 
 import qualified Data.Map as M (fromList, lookup)
 import Data.List.Split (endBy)
 import qualified Data.Text as T 
+import qualified Data.Text.Read as T 
 import Data.Aeson.Types (Pair,Value)
 import Data.Aeson
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy.Char8 as BL 
+import Control.Concurrent.ParallelIO
 
-fichierTest1 = "C:/Users/lyup7323/Developpement/Haskell/Com/qos1.xls"
-fichierTest2 = "E:/Programmation/haskell/Com/qos1.xls"
+
+
+fichierTest = "qos.xls"
 fichierTest3 = "E:/Programmation/haskell/Com/qos.xls"
 fichierTest4 = "C:/Users/lyup7323/Developpement/Haskell/Com/qos.xls"
 
@@ -18,17 +23,20 @@ sheetsName = ["BIV","BIC","BTIP_H323","BTIC","MCCE","OPITML","FIA","BTIP_SIP" ,"
 
 --sheetsName = ["MCCE","OPITML","FIA","BTIP_SIP"]
 -- sheetsName = ["BIV","BIC","BTIP_H323","BTIC","MCCE","FIA"]
-main = xl2json fichierTest4 >>= BL.writeFile "json.txt"
+main = xl2json fichierTest >>= BL.writeFile "json.txt"
 getData' sheet cast row = mapM (castText cast sheet row) [4..55] 
             
 castText cast sheet row col = do 
     vals <- sheet # getCells row col ## getFormula 
     return $ cast vals
+
 xl2json :: String -> IO BL.ByteString
 xl2json file = coRun $ do 
     (pExl, workBooks, workSheets) <- xlInit file
     xs <- mapM (processRowData workSheets) sheetsName
+ --   xs <- parallel (processRowData workSheets) sheetsName
     xlQuit workBooks pExl
+    stopGlobalPool
     return $ servToBS xs
 
 xlQuit workBooks appXl = do
@@ -94,7 +102,7 @@ valuesFromSheet workSheets sheetName= do
             where
                 castText cast sheet row col = do 
                     vals <- sheet # getCells row col ## getFormula 
-                    return $ cast vals 
+                    return.cast.T.pack $  vals 
                     
 
     nbSitesVal         <- fmap toJSON $ lookupData toInt 0 rowSite
@@ -112,15 +120,15 @@ valuesFromSheet workSheets sheetName= do
     rtdVal             <- fmap toJSON $ lookupData toDouble 0.0 rowRtd 
     availVal           <- fmap toJSON $ lookupData toDouble 0.0 rowAvail 
     unavailVal         <- fmap toJSON $ lookupData toDouble 0.0 rowUnAvail 
-    commentIndisp1Val  <- fmap toJSON $ lookupData id (""::String) rowComInd1 
-    commentIndisp2Val  <- fmap toJSON $ lookupData id (""::String) rowComInd2
-    commentIndisp3Val  <- fmap toJSON $ lookupData id (""::String) rowComInd3
-    commentIndisp4Val  <- fmap toJSON $ lookupData id (""::String) rowComInd4
-    commentIndisp5Val  <- fmap toJSON $ lookupData id (""::String) rowComInd5
-    commentAFIS1Val    <- fmap toJSON $ lookupData id (""::String) rowComAfis1
-    commentAFIS2Val    <- fmap toJSON $ lookupData id (""::String) rowComAfis2
-    commentMOS1Val     <- fmap toJSON $ lookupData id (""::String) rowComMos1
-    commentMOS2Val     <- fmap toJSON $ lookupData id (""::String) rowComMos2
+    commentIndisp1Val  <- fmap toJSON $ lookupData id (T.pack "") rowComInd1 
+    commentIndisp2Val  <- fmap toJSON $ lookupData id (T.pack "") rowComInd2
+    commentIndisp3Val  <- fmap toJSON $ lookupData id (T.pack "") rowComInd3
+    commentIndisp4Val  <- fmap toJSON $ lookupData id (T.pack "") rowComInd4
+    commentIndisp5Val  <- fmap toJSON $ lookupData id (T.pack "") rowComInd5
+    commentAFIS1Val    <- fmap toJSON $ lookupData id (T.pack "") rowComAfis1
+    commentAFIS2Val    <- fmap toJSON $ lookupData id (T.pack "") rowComAfis2
+    commentMOS1Val     <- fmap toJSON $ lookupData id (T.pack "") rowComMos1
+    commentMOS2Val     <- fmap toJSON $ lookupData id (T.pack "") rowComMos2
 
  -- KPistruct
     let kpiValues = [ nbSitesVal, nbChannelsVal, nbCallsVal, nbMinutesVal, asrVal
@@ -136,15 +144,16 @@ valuesFromSheet workSheets sheetName= do
 -- take 2 decimals
 trunc :: Double -> Double
 trunc double = (fromInteger $ round $ double * (10^2)) / (10.0 ^^2)
-toDouble :: String -> Double
+toDouble :: T.Text -> Double
 --toDouble xs = case (reads.chgComma.endBy "," $ xs :: [(Double,String)] ) of
-toDouble xs = case (reads xs :: [(Double,String)] ) of
-    [(d,s)] -> trunc d
-    _ -> 0
+toDouble xs = case T.double xs of  
+    Right (d,s) -> trunc d
+    Left _ -> 0
 
-toInt xs = case (reads xs :: [(Int,String)] ) of
-    [(d,s)] -> d
-    _ -> 0
+toInt :: T.Text -> Int
+toInt xs = case T.decimal xs of 
+    Right (d,s) -> d
+    Left _ -> 0
 
 
 kpis =  ["nbSites", "nbChannels", "nbCalls", "nbMinutes", "asr", "ner"

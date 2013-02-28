@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, BangPatterns #-}
 
 -- ghc --make XL2JSON.hs -o testBS -rtsopts -prof -auto-all -caf-all
 
@@ -11,8 +11,8 @@ import Data.Aeson.Types (Pair,Value)
 import Data.Aeson
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy.Char8 as BL 
-import Control.Concurrent.ParallelIO
-
+import Control.Concurrent.ParallelIO.Local
+import qualified Data.Vector as V
 
 
 fichierTest = "qos.xls"
@@ -23,20 +23,22 @@ sheetsName = ["BIV","BIC","BTIP_H323","BTIC","MCCE","OPITML","FIA","BTIP_SIP" ,"
 
 --sheetsName = ["MCCE","OPITML","FIA","BTIP_SIP"]
 -- sheetsName = ["BIV","BIC","BTIP_H323","BTIC","MCCE","FIA"]
-main = xl2json fichierTest >>= BL.writeFile "json.txt"
-getData' sheet cast row = mapM (castText cast sheet row) [4..55] 
-            
+main = xl2json fichierTest3 >>= BL.writeFile "json.txt"
+getData' sheet cast row = fmap V.fromList $ mapM (castText cast sheet row) [4..55] 
+           
+lookupData' s c f r = maybe (return $ V.replicate 52 f) (getData' s c) r
+
 castText cast sheet row col = do 
     vals <- sheet # getCells row col ## getFormula 
-    return $ cast vals
+    return.cast.T.pack $ vals
 
 xl2json :: String -> IO BL.ByteString
 xl2json file = coRun $ do 
     (pExl, workBooks, workSheets) <- xlInit file
     xs <- mapM (processRowData workSheets) sheetsName
- --   xs <- parallel (processRowData workSheets) sheetsName
+   -- xs <- withPool 2 $ \pool -> parallel pool $ map (processRowData workSheets) sheetsName
     xlQuit workBooks pExl
-    stopGlobalPool
+    --stopGlobalPool
     return $ servToBS xs
 
 xlQuit workBooks appXl = do
@@ -94,17 +96,18 @@ valuesFromSheet workSheets sheetName= do
 
         --lookupData :: Variant a => a -> Maybe Int -> IO [a] 
         -- return a list of Kpi's datas if kpi's row is found otherwise a defaut value
-        lookupData cast fill rowKpi  = maybe (return $ replicate 52 fill) -- default value [fill,...fill]
+        lookupData cast fill rowKpi  = maybe (return $ V.replicate 52 fill) -- default value [fill,...fill]
                                        (getData cast) -- handler 
                                        rowKpi -- Nothing or Just (kpi's row) 
 
-        getData cast row = mapM (castText cast sheetSel row) [4..55] 
+           
+        getData cast row = fmap V.fromList $ mapM (castText cast sheetSel row) [4..55] 
             where
                 castText cast sheet row col = do 
                     vals <- sheet # getCells row col ## getFormula 
                     return.cast.T.pack $  vals 
                     
-
+   -- print kpiIndMap
     nbSitesVal         <- fmap toJSON $ lookupData toInt 0 rowSite
     nbChannelsVal      <- fmap toJSON $ lookupData toInt 0 rowChannels
     nbMinutesVal       <- fmap toJSON $ lookupData toDouble 0.0 rowMinutes

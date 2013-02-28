@@ -10,3 +10,9 @@ cabal-dev
 *.swp
 *.xls
 json.txt
+*.aux
+*.hp
+*.prof
+*.ps
+*.prof*
+

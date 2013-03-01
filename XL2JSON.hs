@@ -64,7 +64,7 @@ processRowData sheets sheetName = do
 valuesFromSheet :: Sheet a -> String -> IO [Value] 
 valuesFromSheet workSheets sheetName= do 
     sheetSel <- workSheets # propertyGet_1 "Item" sheetName
-    kpiNames <- mapM (\x -> sheetSel # getCells x 3 ## getText) [7..100]
+    kpiNames <- mapM (\x -> sheetSel # getCells x 3 ## getText) [7..85]
 
 
     -- get KPI
@@ -103,9 +103,10 @@ valuesFromSheet workSheets sheetName= do
            
         getData cast row = fmap V.fromList $ mapM (castText cast sheetSel row) [4..55] 
             where
-                castText cast sheet row col = do 
-                    vals <- sheet # getCells row col ## getFormula 
-                    return.cast.T.pack $  vals 
+                castText cast sheet row col = getOneData sheet row col >>= 
+                                              return.cast.T.pack
+                getOneData sheet row col = {-# SCC "getOnedata" #-} sheet # getCells row col ## getFormula
+
                     
    -- print kpiIndMap
     nbSitesVal         <- fmap toJSON $ lookupData toInt 0 rowSite
@@ -172,5 +173,6 @@ servToPair kpiValues s  = s .= kpisJSON
     where kpisJSON =  object $ zip kpis kpiValues
 
 servToBS :: [Pair] -> BL.ByteString 
-servToBS  = encodePretty . object
+servToBS  = encode . object -- (19% alloc)
+--servToBS  = encodePretty . object -- (29% alloc)
 

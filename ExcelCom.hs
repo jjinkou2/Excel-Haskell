@@ -148,19 +148,3 @@ createObjExl = do
     pExl <- coCreateInstance clsidExcel  Nothing LocalProcess iidAppl
     return pExl
 
-
-
-getFileXl fname  = do
-    pf <- coCreateObject' "Excel.Application" iidIPersistFile
-    stackWideString fname $ \pfname -> do
-      persistfileLoad' pf pfname 0
-      pf # queryInterface iidAppl
-
-coCreateObject' :: ProgID -> IID (IUnknown a) -> IO (IUnknown a)
-coCreateObject' progid iid = do
-    clsid  <- clsidFromProgID progid
-    coCreateInstance clsid Nothing LocalProcess iid
-
-
-
-

@@ -173,7 +173,6 @@ main2 = coRun $ do
 
     workBooks # method_1_0 "Close" xlSaveChanges
     pExl # method_0_0 "Quit"
-    mapM release [sheetSel,workSheets, activeWBook,workBook, workBooks, pExl]
 
 
 

@@ -10,16 +10,8 @@ cabal-dev
 *.swp
 *.xls
 json.txt
-<<<<<<< HEAD
-*.aux
-*.hp
 *.prof
+*.aux
 *.ps
+*.hp
 *.prof*
-=======
-*.prof
-*.aux
-*.ps
-*.hp
->>>>>>> 0a70eafff6f65d9610bccb65904e70368ce2e2b2
-

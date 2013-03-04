@@ -13,8 +13,8 @@ module ExcelCom (
         , getWSheets, getSheet, getSheetName, sheetSelect, getActiveSheet, getActiveSheet0
         , setSheetName
         , getRange, getCells
-        ,createObjExl
-        
+        , createObjExl
+        , enumVariantsXL        
         )
 
 
@@ -147,4 +147,35 @@ createObjExl = do
     clsidExcel <- clsidFromProgID "Excel.Application"
     pExl <- coCreateInstance clsidExcel  Nothing LocalProcess iidAppl
     return pExl
+--
+-- EnumVariant 
+-- coming from Automation.hs and com.hs
+--
 
+data EnumVARIANT a      = EnumVARIANT
+type IEnumVARIANT a     = IUnknown (EnumVARIANT a)
+iidIEnumVARIANT :: IID (IEnumVARIANT ())
+iidIEnumVARIANT = mkIID "{00020404-0000-0000-C000-000000000046}"
+
+newEnum :: IDispatch a -> IO (Int, IEnumVARIANT b)
+newEnum ip = do
+  iunk  <- ip # propertyGet "_NewEnum" [] outIUnknown
+  ienum <- iunk # queryInterface iidIEnumVARIANT
+  len   <- ip   # propertyGet "Count" [] outInt
+  return (len, castIface ienum)
+  
+
+getByOne ie def = do
+    mb <- catchComException (ie # enumNextOne (fromIntegral sizeofVARIANT) resVariant) 
+                        (\ _ -> return $ Just def)
+    case mb of
+	   Nothing -> return []
+	   Just x -> do
+	     xs <- getByOne ie def
+	     return (x:xs)
+
+enumVariantsXL :: Variant a => a -> IDispatch b -> IO (Int, [a])
+enumVariantsXL def ip  = do
+     (len, ienum) <- newEnum ip
+     ls <- getByOne ienum def
+     return (len, ls)

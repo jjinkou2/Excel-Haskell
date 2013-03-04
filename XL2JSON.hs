@@ -21,7 +21,7 @@ fichierTest4 = "C:/Users/lyup7323/Developpement/Haskell/Com/qos.xls"
 sheetsName = ["BIV","BIC","BTIP_H323","BTIC","MCCE","OPITML","FIA","BTIP_SIP" ,"OVP","BTELU"]
 --sheetsName = ["FIA"]
 
-main = xl2json fichierTest4 >>= BL.writeFile "json.txt"
+main = xl2json fichierTest3 >>= BL.writeFile "json.txt"
 getData' sheet cast row = fmap V.fromList $ mapM (castText cast sheet row) [4..55] 
            
 lookupData' s c f r = maybe (return $ V.replicate 52 f) (getData' s c) r
@@ -30,24 +30,33 @@ castText cast sheet row col = do
     vals <- sheet # getCells row col ## getFormula 
     return.cast.T.pack $ vals
 
-xl2json :: String -> IO BL.ByteString
-xl2json file = coRun $ do 
+xl2json' :: String -> IO BL.ByteString
+xl2json' file = coRun $ do 
     (pExl, workBooks, workSheets) <- xlInit file
+
+    xs <- mapM (processRowData workSheets) sheetsName
+
+    xlQuit workBooks pExl
+    return $ servToBS xs
+
+xl2json :: String -> IO BL.ByteString
+xl2json file = coRunEx $ do 
+    pExl <- createObjExl 
+    workBooks <- pExl # getWorkbooks
+    pExl # propertySet "DisplayAlerts" [inBool False]
+    workBook <- workBooks # openWorkBooks file
+    putStrLn  $"File loaded: " ++ file
 
     boxCount <- newMVar 0
     boxServBS <- newMVar []
-    sequence $ map (forkIO.processRowData' boxCount boxServBS workSheets) sheetsName
-    --xs <- mapM (processRowData workSheets) sheetsName
+    sequence $ map (forkIO.processRowData' boxCount boxServBS) sheetsName
 
     boucle boxCount
-
-
 
     xlQuit workBooks pExl
 
     xs <- takeMVar boxServBS
     return $ servToBS xs
-
     
 boucle box = do 
     val <- takeMVar box 
@@ -81,24 +90,26 @@ debug file sheetName rngStr = do
 
     return rng
 
-processRowData' :: MVar Int -> MVar [Pair] -> Sheet a -> String -> IO ()
-processRowData' boxCount boxServBS sheets sheetName = coRun $ do 
+processRowData' :: MVar Int -> MVar [Pair]  -> String -> IO ()
+processRowData' boxCount boxServBS sheetName = do 
+    coInitializeEx
+    pExlTh <- getActiveObject "Excel.Application"
+    workBook <- pExlTh # propertyGet_0 "ActiveWorkBook"
+    workSheets <- workBook # getWSheets
 
-    putStrLn $ "got all datas from " ++ sheetName
-    putStrLn $ replicate 50 '-'
-    kpisVal <- valuesFromSheet sheets sheetName
+    kpisVal <- valuesFromSheet workSheets sheetName
     
     servVal <- takeMVar boxServBS
     putMVar boxServBS $ (servToPair kpisVal (T.pack sheetName)):servVal
     countVal <- takeMVar boxCount 
     putMVar boxCount $ countVal + 1 
+    putStrLn $ "got all datas from "++ sheetName++ "\n"++ replicate 50 '-'
     
 
 
 processRowData :: Sheet a -> String -> IO Pair
 processRowData sheets sheetName = do 
-    putStrLn $ "got all datas from " ++ sheetName
-    putStrLn $ replicate 50 '-'
+    putStrLn $ "got all datas from "++ sheetName++ "\n"++ replicate 50 '-'
     kpisVal <- valuesFromSheet sheets sheetName
     return $ servToPair kpisVal (T.pack sheetName)    
 

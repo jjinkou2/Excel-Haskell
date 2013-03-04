@@ -13,7 +13,7 @@ module ExcelCom (
         , getWSheets, getSheet, getSheetName, sheetSelect, getActiveSheet, getActiveSheet0
         , setSheetName
         , getRange, getCells
-        , createObjExl
+        , createObjExl 
         , enumVariantsXL        
         )
 

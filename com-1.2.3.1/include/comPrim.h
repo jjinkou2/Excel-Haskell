@@ -117,10 +117,19 @@ struct IUnknown { struct IUnknownVtbl* lpVtbl;};
 #define FAILED(hr)   ((HRESULT)(hr)<0)
 #endif
 
+#ifndef COINIT_MULTITHREADED
+#define COINIT_MULTITHREADED	0x0
+#endif
+
 extern
 HRESULT
 STDCALL
 OleInitialize ( void* pvReserved );
+
+extern
+HRESULT
+STDCALL
+CoInitializeEx ( void* pvReserved, DWORD doCoInit );
 
 extern
 void

@@ -108,6 +108,16 @@ HRESULT comInitialize(void)
    }
    
 }
+HRESULT comInitializeEx(void)
+{
+   if (!com_already_initialized) {
+      com_already_initialized = 1;
+      return CoInitializeEx (NULL,COINIT_MULTITHREADED);
+   } else {
+      return S_OK;
+   }
+   
+}
 
 void shutdown__()
 {

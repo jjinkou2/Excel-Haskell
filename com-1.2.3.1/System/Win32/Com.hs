@@ -925,6 +925,9 @@ sizeofCLSID = sizeofGUID
 coInitialize :: IO ()
 coInitialize = comInitialize
 
+coInitializeEX :: IO ()
+coInitializeEx = comInitializeEx
+
 coUnInitialize :: IO ()
 coUnInitialize = comUnInitialize
 

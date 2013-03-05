@@ -57,7 +57,8 @@ xl2json file = coRunEx $ do
     boxServBS <- newMVar []
     thids <- sequence $ map (forkOS.processRowData' boxCount boxServBS) sheetsName
 
-    boucle' boxCount
+    --boucle' boxCount
+    boucle thids
 
     xlQuit workBooks pExl
 
@@ -65,7 +66,8 @@ xl2json file = coRunEx $ do
     return $ servToBS xs
 
 boucle thids = do 
-    if allM (\thid-> threadStatus thid == ThreadFinished) thids 
+    thstat <- mapM threadStatus thids
+    if all ( == ThreadFinished) thstat
     then return ()
     else do
         threadDelay 10000
@@ -80,7 +82,7 @@ boucle' box = do
     else do 
         putMVar box val
         print "waiting"
-        boucle box
+        boucle' box
 
 xlQuit workBooks appXl = do
     workBooks # method_1_0 "Close" xlDoNotSaveChanges

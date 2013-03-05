@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, BangPatterns #-}
 
--- ghc --make XL2JSON.hs -o testBS -rtsopts -prof -auto-all -caf-all
+-- ghc --make -O2 -threaded XL2JSON.hs -o testThread -rtsopts -prof -auto-all -caf-all
 
 import ExcelCom 
 import qualified Data.Map as M (fromList, lookup)
@@ -11,8 +11,14 @@ import Data.Aeson
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy.Char8 as BL 
 import Control.Concurrent
+import GHC.Conc
 import qualified Data.Vector as V
 
+
+-- | Monad version of 'all', aborts the computation at the first @False@ value
+allM :: (a -> IO Bool) -> [a] -> IO Bool
+allM _ []     = return True
+allM f (b:bs) = (f b) >>= (\bv -> if bv then allM f bs else return False)
 
 fichierTest = "qos.xls"
 fichierTest3 = "E:/Programmation/haskell/Com/qos.xls"
@@ -21,7 +27,7 @@ fichierTest4 = "C:/Users/lyup7323/Developpement/Haskell/Com/qos.xls"
 sheetsName = ["BIV","BIC","BTIP_H323","BTIC","MCCE","OPITML","FIA","BTIP_SIP" ,"OVP","BTELU"]
 --sheetsName = ["FIA"]
 
-main = xl2json fichierTest3 >>= BL.writeFile "json.txt"
+main = xl2json fichierTest4 >>= BL.writeFile "json.txt"
 getData' sheet cast row = fmap V.fromList $ mapM (castText cast sheet row) [4..55] 
            
 lookupData' s c f r = maybe (return $ V.replicate 52 f) (getData' s c) r
@@ -49,16 +55,23 @@ xl2json file = coRunEx $ do
 
     boxCount <- newMVar 0
     boxServBS <- newMVar []
-    sequence $ map (forkIO.processRowData' boxCount boxServBS) sheetsName
+    thids <- sequence $ map (forkOS.processRowData' boxCount boxServBS) sheetsName
 
-    boucle boxCount
+    boucle' boxCount
 
     xlQuit workBooks pExl
 
     xs <- takeMVar boxServBS
     return $ servToBS xs
-    
-boucle box = do 
+
+boucle thids = do 
+    if allM (\thid-> threadStatus thid == ThreadFinished) thids 
+    then return ()
+    else do
+        threadDelay 10000
+        boucle thids
+ 
+boucle' box = do 
     val <- takeMVar box 
     if val >= length sheetsName 
     then do
@@ -91,8 +104,8 @@ debug file sheetName rngStr = do
     return rng
 
 processRowData' :: MVar Int -> MVar [Pair]  -> String -> IO ()
-processRowData' boxCount boxServBS sheetName = do 
-    coInitializeEx
+processRowData' boxCount boxServBS sheetName = coRunEx $ do 
+   -- coInitializeEx
     pExlTh <- getActiveObject "Excel.Application"
     workBook <- pExlTh # propertyGet_0 "ActiveWorkBook"
     workSheets <- workBook # getWSheets

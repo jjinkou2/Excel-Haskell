@@ -16,3 +16,4 @@ json.txt
 *.hp
 *.prof*
 json.txt
+*log

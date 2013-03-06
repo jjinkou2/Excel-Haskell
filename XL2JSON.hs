@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings, BangPatterns #-}
 
 -- ghc --make -O2 -threaded XL2JSON.hs -o testThread -rtsopts -prof -auto-all -caf-all
+-- testThread +RTS -N2 -p (pour avoir le profiling)
+-- pour threadscope
+-- ghc --make -O2 -threaded XL2JSON.hs -o testThread -rtsopts  -eventlog
+-- testThread +RTS -N2 -ls
 
 import ExcelCom 
 import qualified Data.Map as M (fromList, lookup)
@@ -10,15 +14,11 @@ import Data.Aeson.Types (Pair,Value)
 import Data.Aeson
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy.Char8 as BL 
-import Control.Concurrent
+import Control.Concurrent (takeMVar,putMVar,newMVar,MVar(..))
 import GHC.Conc
 import qualified Data.Vector as V
+import Control.Monad (unless)
 
-
--- | Monad version of 'all', aborts the computation at the first @False@ value
-allM :: (a -> IO Bool) -> [a] -> IO Bool
-allM _ []     = return True
-allM f (b:bs) = (f b) >>= (\bv -> if bv then allM f bs else return False)
 
 fichierTest = "qos.xls"
 fichierTest3 = "E:/Programmation/haskell/Com/qos.xls"
@@ -28,22 +28,7 @@ sheetsName = ["BIV","BIC","BTIP_H323","BTIC","MCCE","OPITML","FIA","BTIP_SIP" ,"
 --sheetsName = ["FIA"]
 
 main = xl2json fichierTest4 >>= BL.writeFile "json.txt"
-getData' sheet cast row = fmap V.fromList $ mapM (castText cast sheet row) [4..55] 
-           
-lookupData' s c f r = maybe (return $ V.replicate 52 f) (getData' s c) r
 
-castText cast sheet row col = do 
-    vals <- sheet # getCells row col ## getFormula 
-    return.cast.T.pack $ vals
-
-xl2json' :: String -> IO BL.ByteString
-xl2json' file = coRun $ do 
-    (pExl, workBooks, workSheets) <- xlInit file
-
-    xs <- mapM (processRowData workSheets) sheetsName
-
-    xlQuit workBooks pExl
-    return $ servToBS xs
 
 xl2json :: String -> IO BL.ByteString
 xl2json file = coRunEx $ do 
@@ -53,11 +38,9 @@ xl2json file = coRunEx $ do
     workBook <- workBooks # openWorkBooks file
     putStrLn  $"File loaded: " ++ file
 
-    boxCount <- newMVar 0
     boxServBS <- newMVar []
-    thids <- sequence $ map (forkOS.processRowData' boxCount boxServBS) sheetsName
+    thids <- sequence $ map (forkIO.processRowData boxServBS) sheetsName
 
-    --boucle' boxCount
     boucle thids
 
     xlQuit workBooks pExl
@@ -67,22 +50,12 @@ xl2json file = coRunEx $ do
 
 boucle thids = do 
     thstat <- mapM threadStatus thids
-    if all ( == ThreadFinished) thstat
-    then return ()
-    else do
+    unless (isFinished thstat) $ do 
         threadDelay 10000
         boucle thids
+    where
+        isFinished = all ( == ThreadFinished) 
  
-boucle' box = do 
-    val <- takeMVar box 
-    if val >= length sheetsName 
-    then do
-        putStrLn "finished"
-        return () 
-    else do 
-        putMVar box val
-        print "waiting"
-        boucle' box
 
 xlQuit workBooks appXl = do
     workBooks # method_1_0 "Close" xlDoNotSaveChanges
@@ -105,9 +78,8 @@ debug file sheetName rngStr = do
 
     return rng
 
-processRowData' :: MVar Int -> MVar [Pair]  -> String -> IO ()
-processRowData' boxCount boxServBS sheetName = coRunEx $ do 
-   -- coInitializeEx
+processRowData :: MVar [Pair]  -> String -> IO ()
+processRowData boxServBS sheetName =  coRunEx $ do 
     pExlTh <- getActiveObject "Excel.Application"
     workBook <- pExlTh # propertyGet_0 "ActiveWorkBook"
     workSheets <- workBook # getWSheets
@@ -116,17 +88,9 @@ processRowData' boxCount boxServBS sheetName = coRunEx $ do
     
     servVal <- takeMVar boxServBS
     putMVar boxServBS $ (servToPair kpisVal (T.pack sheetName)):servVal
-    countVal <- takeMVar boxCount 
-    putMVar boxCount $ countVal + 1 
     putStrLn $ "got all datas from "++ sheetName++ "\n"++ replicate 50 '-'
-    
 
 
-processRowData :: Sheet a -> String -> IO Pair
-processRowData sheets sheetName = do 
-    putStrLn $ "got all datas from "++ sheetName++ "\n"++ replicate 50 '-'
-    kpisVal <- valuesFromSheet sheets sheetName
-    return $ servToPair kpisVal (T.pack sheetName)    
 
 valuesFromSheet :: Sheet a -> String -> IO [Value] 
 valuesFromSheet workSheets sheetName= do 
